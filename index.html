@@ -1,0 +1,712 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
+  <meta name="theme-color" content="#0f0f0f" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Stickers" />
+  <link rel="manifest" href="manifest.json" />
+  <title>Sticker Box</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg: #0a0a0a;
+      --surface: #151515;
+      --surface2: #1e1e1e;
+      --border: #2a2a2a;
+      --accent: #e8ff5a;
+      --accent2: #ff5a8a;
+      --text: #f0f0f0;
+      --text2: #888;
+      --radius: 16px;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'DM Sans', sans-serif;
+      min-height: 100dvh;
+      overflow-x: hidden;
+    }
+
+    /* Header */
+    .header {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      background: var(--bg);
+      border-bottom: 1px solid var(--border);
+      padding: 16px 20px 12px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .header-title {
+      font-family: 'Syne', sans-serif;
+      font-weight: 800;
+      font-size: 22px;
+      letter-spacing: -0.5px;
+    }
+    .header-title span { color: var(--accent); }
+    .header-count {
+      font-size: 12px;
+      color: var(--text2);
+      font-weight: 500;
+      background: var(--surface2);
+      padding: 4px 10px;
+      border-radius: 20px;
+    }
+
+    /* Search */
+    .search-bar {
+      padding: 12px 20px;
+      display: flex;
+      gap: 10px;
+    }
+    .search-input {
+      flex: 1;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      color: var(--text);
+      font-family: 'DM Sans', sans-serif;
+      font-size: 14px;
+      padding: 10px 14px;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+    .search-input:focus { border-color: var(--accent); }
+    .search-input::placeholder { color: var(--text2); }
+
+    /* Categories */
+    .categories {
+      padding: 0 20px 12px;
+      display: flex;
+      gap: 8px;
+      overflow-x: auto;
+      scrollbar-width: none;
+    }
+    .categories::-webkit-scrollbar { display: none; }
+    .cat-chip {
+      flex-shrink: 0;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 6px 14px;
+      font-size: 13px;
+      color: var(--text2);
+      cursor: pointer;
+      transition: all 0.15s;
+      font-family: 'DM Sans', sans-serif;
+    }
+    .cat-chip.active {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: #000;
+      font-weight: 600;
+    }
+
+    /* Grid */
+    .grid {
+      padding: 8px 20px 100px;
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+    }
+
+    .sticker-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+      aspect-ratio: 1;
+      position: relative;
+      cursor: pointer;
+      transition: transform 0.15s, border-color 0.15s;
+      animation: fadeIn 0.3s ease;
+    }
+    @keyframes fadeIn { from { opacity: 0; transform: scale(0.9); } to { opacity: 1; transform: scale(1); } }
+    .sticker-card:active { transform: scale(0.94); }
+    .sticker-card img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+    .sticker-card .overlay {
+      position: absolute;
+      inset: 0;
+      background: rgba(0,0,0,0.6);
+      backdrop-filter: blur(2px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      opacity: 0;
+      transition: opacity 0.15s;
+      gap: 10px;
+    }
+    .sticker-card:active .overlay { opacity: 1; }
+    .overlay-btn {
+      background: var(--accent);
+      color: #000;
+      border: none;
+      border-radius: 10px;
+      padding: 8px 12px;
+      font-size: 12px;
+      font-weight: 700;
+      font-family: 'Syne', sans-serif;
+      cursor: pointer;
+      letter-spacing: 0.3px;
+    }
+    .overlay-btn.del {
+      background: var(--accent2);
+    }
+    .sticker-card .cat-badge {
+      position: absolute;
+      top: 6px;
+      left: 6px;
+      background: rgba(0,0,0,0.7);
+      backdrop-filter: blur(4px);
+      color: var(--accent);
+      font-size: 10px;
+      font-weight: 600;
+      padding: 2px 7px;
+      border-radius: 10px;
+      font-family: 'Syne', sans-serif;
+      max-width: 70%;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    /* Empty state */
+    .empty {
+      grid-column: 1 / -1;
+      text-align: center;
+      padding: 60px 20px;
+      color: var(--text2);
+    }
+    .empty-icon { font-size: 56px; margin-bottom: 16px; }
+    .empty h3 { font-family: 'Syne', sans-serif; font-size: 18px; color: var(--text); margin-bottom: 8px; }
+    .empty p { font-size: 14px; line-height: 1.5; }
+
+    /* FAB */
+    .fab {
+      position: fixed;
+      bottom: 24px;
+      right: 20px;
+      background: var(--accent);
+      color: #000;
+      border: none;
+      border-radius: 20px;
+      padding: 14px 22px;
+      font-family: 'Syne', sans-serif;
+      font-size: 15px;
+      font-weight: 700;
+      cursor: pointer;
+      box-shadow: 0 4px 24px rgba(232,255,90,0.35);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      transition: transform 0.15s;
+      z-index: 200;
+    }
+    .fab:active { transform: scale(0.95); }
+    .fab svg { width: 18px; height: 18px; }
+
+    /* Modal backdrop */
+    .modal-backdrop {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.75);
+      backdrop-filter: blur(8px);
+      z-index: 300;
+      align-items: flex-end;
+    }
+    .modal-backdrop.open { display: flex; animation: fadeInBack 0.2s ease; }
+    @keyframes fadeInBack { from { opacity: 0; } to { opacity: 1; } }
+
+    .modal {
+      background: var(--surface);
+      border-radius: 24px 24px 0 0;
+      width: 100%;
+      padding: 20px 20px 40px;
+      animation: slideUp 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+    @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+
+    .modal-handle {
+      width: 40px;
+      height: 4px;
+      background: var(--border);
+      border-radius: 2px;
+      margin: 0 auto 20px;
+    }
+    .modal-title {
+      font-family: 'Syne', sans-serif;
+      font-size: 18px;
+      font-weight: 700;
+      margin-bottom: 20px;
+    }
+    .modal-title span { color: var(--accent); }
+
+    /* Preview area */
+    .preview-area {
+      background: var(--surface2);
+      border: 2px dashed var(--border);
+      border-radius: var(--radius);
+      height: 160px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 16px;
+      cursor: pointer;
+      transition: border-color 0.2s;
+      overflow: hidden;
+      position: relative;
+    }
+    .preview-area:active { border-color: var(--accent); }
+    .preview-area img { width: 100%; height: 100%; object-fit: contain; }
+    .preview-placeholder { text-align: center; color: var(--text2); }
+    .preview-placeholder svg { width: 40px; height: 40px; margin-bottom: 10px; opacity: 0.5; }
+    .preview-placeholder p { font-size: 14px; }
+
+    .input-field {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      color: var(--text);
+      font-family: 'DM Sans', sans-serif;
+      font-size: 14px;
+      padding: 12px 14px;
+      width: 100%;
+      outline: none;
+      margin-bottom: 12px;
+      transition: border-color 0.2s;
+    }
+    .input-field:focus { border-color: var(--accent); }
+    .input-field::placeholder { color: var(--text2); }
+
+    .modal-actions {
+      display: flex;
+      gap: 10px;
+      margin-top: 4px;
+    }
+    .btn-cancel {
+      flex: 1;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      color: var(--text2);
+      font-family: 'Syne', sans-serif;
+      font-size: 14px;
+      font-weight: 600;
+      padding: 14px;
+      cursor: pointer;
+    }
+    .btn-save {
+      flex: 2;
+      background: var(--accent);
+      border: none;
+      border-radius: 12px;
+      color: #000;
+      font-family: 'Syne', sans-serif;
+      font-size: 14px;
+      font-weight: 700;
+      padding: 14px;
+      cursor: pointer;
+      transition: opacity 0.2s;
+    }
+    .btn-save:disabled { opacity: 0.4; }
+
+    /* Action modal */
+    .action-modal .action-preview {
+      width: 120px;
+      height: 120px;
+      object-fit: contain;
+      border-radius: 12px;
+      margin: 0 auto 16px;
+      display: block;
+      background: var(--surface2);
+    }
+    .action-list { display: flex; flex-direction: column; gap: 10px; }
+    .action-item {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 14px 16px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      cursor: pointer;
+      transition: border-color 0.15s, background 0.15s;
+      font-size: 15px;
+      font-family: 'DM Sans', sans-serif;
+    }
+    .action-item:active { border-color: var(--accent); background: var(--surface); }
+    .action-item .action-icon { font-size: 22px; width: 28px; text-align: center; }
+    .action-item .action-label { font-weight: 500; }
+    .action-item .action-sub { font-size: 12px; color: var(--text2); }
+    .action-item.danger .action-label { color: var(--accent2); }
+
+    /* Toast */
+    .toast {
+      position: fixed;
+      bottom: 90px;
+      left: 50%;
+      transform: translateX(-50%) translateY(20px);
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      color: var(--text);
+      font-size: 13px;
+      font-family: 'DM Sans', sans-serif;
+      padding: 10px 18px;
+      border-radius: 20px;
+      opacity: 0;
+      transition: all 0.3s;
+      z-index: 500;
+      white-space: nowrap;
+      pointer-events: none;
+    }
+    .toast.show {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0);
+    }
+    .toast.success { border-color: var(--accent); color: var(--accent); }
+    .toast.error { border-color: var(--accent2); color: var(--accent2); }
+
+    /* Hidden file input */
+    #file-input { display: none; }
+  </style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-title">Sticker<span>Box</span></div>
+  <div class="header-count" id="count-label">0 stickers</div>
+</div>
+
+<div class="search-bar">
+  <input class="search-input" type="text" id="search-input" placeholder="🔍 Tìm sticker..." oninput="renderGrid()" />
+</div>
+
+<div class="categories" id="cat-bar">
+  <div class="cat-chip active" data-cat="all" onclick="selectCat('all', this)">Tất cả</div>
+</div>
+
+<div class="grid" id="grid"></div>
+
+<button class="fab" onclick="openAddModal()">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+  Thêm sticker
+</button>
+
+<!-- Add Modal -->
+<div class="modal-backdrop" id="add-modal" onclick="closeAddModal(event)">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-title">Thêm <span>sticker mới</span></div>
+    <div class="preview-area" id="preview-area" onclick="document.getElementById('file-input').click()">
+      <div class="preview-placeholder">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+          <rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8.5" cy="8.5" r="1.5"/>
+          <polyline points="21 15 16 10 5 21"/>
+        </svg>
+        <p>Chọn ảnh từ máy</p>
+      </div>
+    </div>
+    <input type="file" id="file-input" accept="image/*" onchange="handleFileSelect(event)" />
+    <input class="input-field" type="text" id="sticker-name" placeholder="Tên sticker (tuỳ chọn)" />
+    <input class="input-field" type="text" id="sticker-cat" placeholder="Category (vd: meme, cute, work...)" list="cat-suggestions" />
+    <datalist id="cat-suggestions"></datalist>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeAddModal()">Huỷ</button>
+      <button class="btn-save" id="btn-save" onclick="saveSticker()" disabled>Lưu sticker</button>
+    </div>
+  </div>
+</div>
+
+<!-- Action Modal -->
+<div class="modal-backdrop" id="action-modal" onclick="closeActionModal(event)">
+  <div class="modal action-modal">
+    <div class="modal-handle"></div>
+    <img src="" alt="" class="action-preview" id="action-preview" />
+    <div class="action-list">
+      <div class="action-item" onclick="copySticker()">
+        <span class="action-icon">📋</span>
+        <div>
+          <div class="action-label">Copy ảnh</div>
+          <div class="action-sub">Dán vào Zalo, Messenger, bất kỳ đâu</div>
+        </div>
+      </div>
+      <div class="action-item" onclick="shareSticker()">
+        <span class="action-icon">📤</span>
+        <div>
+          <div class="action-label">Chia sẻ</div>
+          <div class="action-sub">Gửi trực tiếp qua app</div>
+        </div>
+      </div>
+      <div class="action-item" onclick="downloadSticker()">
+        <span class="action-icon">💾</span>
+        <div>
+          <div class="action-label">Tải xuống</div>
+          <div class="action-sub">Lưu vào Gallery</div>
+        </div>
+      </div>
+      <div class="action-item danger" onclick="deleteSticker()">
+        <span class="action-icon">🗑️</span>
+        <div>
+          <div class="action-label">Xoá sticker này</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+  // ─── DB ───
+  let db;
+  const DB_NAME = 'stickerbox', DB_VERSION = 1, STORE = 'stickers';
+  
+  function openDB() {
+    return new Promise((res, rej) => {
+      const req = indexedDB.open(DB_NAME, DB_VERSION);
+      req.onupgradeneeded = e => {
+        const store = e.target.result.createObjectStore(STORE, { keyPath: 'id', autoIncrement: true });
+        store.createIndex('cat', 'cat', { unique: false });
+      };
+      req.onsuccess = e => { db = e.target.result; res(); };
+      req.onerror = () => rej();
+    });
+  }
+
+  function dbGetAll() {
+    return new Promise(res => {
+      const tx = db.transaction(STORE, 'readonly');
+      tx.objectStore(STORE).getAll().onsuccess = e => res(e.target.result);
+    });
+  }
+
+  function dbAdd(item) {
+    return new Promise(res => {
+      const tx = db.transaction(STORE, 'readwrite');
+      tx.objectStore(STORE).add(item).onsuccess = e => res(e.target.result);
+    });
+  }
+
+  function dbDelete(id) {
+    return new Promise(res => {
+      const tx = db.transaction(STORE, 'readwrite');
+      tx.objectStore(STORE).delete(id).onsuccess = () => res();
+    });
+  }
+
+  // ─── State ───
+  let stickers = [];
+  let currentCat = 'all';
+  let selectedSticker = null;
+  let pendingFile = null;
+
+  // ─── Init ───
+  openDB().then(async () => {
+    stickers = await dbGetAll();
+    renderCats();
+    renderGrid();
+  });
+
+  // ─── Render ───
+  function renderCats() {
+    const cats = [...new Set(stickers.map(s => s.cat).filter(Boolean))];
+    const bar = document.getElementById('cat-bar');
+    bar.innerHTML = `<div class="cat-chip ${currentCat === 'all' ? 'active' : ''}" data-cat="all" onclick="selectCat('all', this)">Tất cả</div>`;
+    cats.forEach(c => {
+      const el = document.createElement('div');
+      el.className = 'cat-chip' + (currentCat === c ? ' active' : '');
+      el.dataset.cat = c;
+      el.textContent = c;
+      el.onclick = function() { selectCat(c, this); };
+      bar.appendChild(el);
+    });
+    // datalist
+    const dl = document.getElementById('cat-suggestions');
+    dl.innerHTML = cats.map(c => `<option value="${c}">`).join('');
+  }
+
+  function selectCat(cat, el) {
+    currentCat = cat;
+    document.querySelectorAll('.cat-chip').forEach(c => c.classList.remove('active'));
+    el.classList.add('active');
+    renderGrid();
+  }
+
+  function renderGrid() {
+    const q = document.getElementById('search-input').value.toLowerCase();
+    let filtered = stickers;
+    if (currentCat !== 'all') filtered = filtered.filter(s => s.cat === currentCat);
+    if (q) filtered = filtered.filter(s => (s.name || '').toLowerCase().includes(q) || (s.cat || '').toLowerCase().includes(q));
+
+    document.getElementById('count-label').textContent = `${filtered.length} sticker${filtered.length !== 1 ? 's' : ''}`;
+
+    const grid = document.getElementById('grid');
+    if (!filtered.length) {
+      grid.innerHTML = `<div class="empty"><div class="empty-icon">🎭</div><h3>Chưa có sticker</h3><p>Nhấn "+ Thêm sticker"<br>để bắt đầu bộ sưu tập</p></div>`;
+      return;
+    }
+    grid.innerHTML = '';
+    filtered.slice().reverse().forEach(s => {
+      const card = document.createElement('div');
+      card.className = 'sticker-card';
+      card.innerHTML = `
+        <img src="${s.data}" alt="${s.name || ''}" loading="lazy" />
+        ${s.cat ? `<div class="cat-badge">${s.cat}</div>` : ''}
+        <div class="overlay">
+          <button class="overlay-btn" onclick="openAction(event, ${s.id})">Dùng</button>
+        </div>`;
+      card.addEventListener('click', () => openAction(null, s.id));
+      grid.appendChild(card);
+    });
+  }
+
+  // ─── Add Modal ───
+  function openAddModal() {
+    pendingFile = null;
+    document.getElementById('sticker-name').value = '';
+    document.getElementById('sticker-cat').value = '';
+    document.getElementById('btn-save').disabled = true;
+    document.getElementById('preview-area').innerHTML = `
+      <div class="preview-placeholder">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+          <rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8.5" cy="8.5" r="1.5"/>
+          <polyline points="21 15 16 10 5 21"/>
+        </svg>
+        <p>Chọn ảnh từ máy</p>
+      </div>`;
+    document.getElementById('add-modal').classList.add('open');
+  }
+
+  function closeAddModal(e) {
+    if (!e || e.target === document.getElementById('add-modal')) {
+      document.getElementById('add-modal').classList.remove('open');
+    }
+  }
+
+  function handleFileSelect(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = ev => {
+      pendingFile = ev.target.result;
+      document.getElementById('preview-area').innerHTML = `<img src="${pendingFile}" />`;
+      document.getElementById('btn-save').disabled = false;
+    };
+    reader.readAsDataURL(file);
+    e.target.value = '';
+  }
+
+  async function saveSticker() {
+    if (!pendingFile) return;
+    const name = document.getElementById('sticker-name').value.trim();
+    const cat = document.getElementById('sticker-cat').value.trim();
+    const id = await dbAdd({ data: pendingFile, name, cat, addedAt: Date.now() });
+    stickers = await dbGetAll();
+    renderCats();
+    renderGrid();
+    closeAddModal();
+    showToast('✅ Đã lưu sticker!', 'success');
+  }
+
+  // ─── Action Modal ───
+  function openAction(e, id) {
+    if (e) e.stopPropagation();
+    selectedSticker = stickers.find(s => s.id === id);
+    if (!selectedSticker) return;
+    document.getElementById('action-preview').src = selectedSticker.data;
+    document.getElementById('action-modal').classList.add('open');
+  }
+
+  function closeActionModal(e) {
+    if (!e || e.target === document.getElementById('action-modal')) {
+      document.getElementById('action-modal').classList.remove('open');
+    }
+  }
+
+  async function copySticker() {
+    try {
+      const res = await fetch(selectedSticker.data);
+      const blob = await res.blob();
+      const imgBlob = new ClipboardItem({ [blob.type]: blob });
+      await navigator.clipboard.write([imgBlob]);
+      closeActionModal();
+      showToast('📋 Đã copy! Giờ paste vào Zalo/Messenger', 'success');
+    } catch {
+      // fallback
+      try {
+        await navigator.clipboard.writeText(selectedSticker.data);
+        closeActionModal();
+        showToast('⚠️ Copy dạng base64 (thử Share thay thế)', '');
+      } catch {
+        showToast('❌ Trình duyệt không hỗ trợ copy ảnh', 'error');
+      }
+    }
+  }
+
+  async function shareSticker() {
+    try {
+      const res = await fetch(selectedSticker.data);
+      const blob = await res.blob();
+      const ext = blob.type.split('/')[1] || 'png';
+      const file = new File([blob], `sticker.${ext}`, { type: blob.type });
+      if (navigator.canShare && navigator.canShare({ files: [file] })) {
+        await navigator.share({ files: [file], title: selectedSticker.name || 'Sticker' });
+        closeActionModal();
+      } else {
+        showToast('❌ Trình duyệt không hỗ trợ share file', 'error');
+      }
+    } catch (err) {
+      if (err.name !== 'AbortError') showToast('❌ Không share được', 'error');
+    }
+  }
+
+  function downloadSticker() {
+    const a = document.createElement('a');
+    a.href = selectedSticker.data;
+    a.download = (selectedSticker.name || 'sticker') + '.png';
+    a.click();
+    closeActionModal();
+    showToast('💾 Đã tải xuống', 'success');
+  }
+
+  async function deleteSticker() {
+    await dbDelete(selectedSticker.id);
+    stickers = await dbGetAll();
+    renderCats();
+    renderGrid();
+    closeActionModal();
+    showToast('🗑️ Đã xoá', '');
+  }
+
+  // ─── Toast ───
+  let toastTimer;
+  function showToast(msg, type) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.className = `toast show ${type}`;
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => { t.className = 'toast'; }, 2800);
+  }
+
+  // ─── Service Worker ───
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('sw.js').catch(() => {});
+  }
+</script>
+</body>
+</html>
